@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>My Availability</title>
+<title>@james's availability</title>
 <style>
   body {
     font-family: 'Arial', sans-serif;
@@ -60,7 +60,7 @@
 </head>
 <body>
 
-<h1>My Availability</h1>
+<h1>@james's availability</h1>
 <div id="schedule">Loading...</div>
 
 <script>
@@ -108,7 +108,7 @@ function renderSchedule(data) {
       if(d.start && d.start !== '08:00'){
         const availBefore = document.createElement('div');
         availBefore.className = 'available';
-        availBefore.textContent = `Available: 08:00 - ${d.start}`;
+        availBefore.textContent = `Available between: 08:00 - ${d.start}`;
         shiftsContainer.appendChild(availBefore);
       }
 
@@ -116,7 +116,7 @@ function renderSchedule(data) {
       if(d.end && d.end !== '23:59'){
         const availAfter = document.createElement('div');
         availAfter.className = 'available';
-        availAfter.textContent = `Available: ${d.end} - 23:59`;
+        availAfter.textContent = `Available between: ${d.end} - 23:59`;
         shiftsContainer.appendChild(availAfter);
       }
     } else {

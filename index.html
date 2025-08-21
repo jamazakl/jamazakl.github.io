@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🌸 My Rota – Days Off 🌸</title>
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Comic Sans MS', 'Segoe UI', cursive, sans-serif;
+      margin: 2rem;
+      background: linear-gradient(135deg, #fce1ec, #e0f7fa);
+      color: #444;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 1.5rem;
+      color: #d63384;
+      text-shadow: 1px 1px #fff;
+    }
+
+    #calendar {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 1rem;
+      border-radius: 20px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+    }
+
+    /* Cute event styling */
+    .fc-event {
+      border: none !important;
+      border-radius: 12px !important;
+      padding: 4px 6px;
+      font-size: 0.85rem;
+      text-align: center;
+    }
+
+    /* Day off colors */
+    .fc-event.Day-Off {
+      background: #ffb3c6 !important;
+      color: #4a004f !important;
+    }
+
+    /* Vacation colors */
+    .fc-event.Vacation {
+      background: #b5ead7 !important;
+      color: #003322 !important;
+    }
+
+    /* General event default */
+    .fc-event.default {
+      background: #cdb4db !important;
+      color: #2a0033 !important;
+    }
+
+    /* Hide ugly borders */
+    .fc-theme-standard td, .fc-theme-standard th {
+      border: 1px solid #f5d0eb !important;
+    }
+
+    /* Rounded day cells */
+    .fc-daygrid-day-frame {
+      border-radius: 10px;
+    }
+
+    /* Highlight weekends */
+    .fc-day-sat, .fc-day-sun {
+      background-color: #fff7f9;
+    }
+  </style>
+</head>
+<body>
+  <h1>🌸 My Cute Rota 🌸</h1>
+  <div id="calendar"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async function() {
+      var calendarEl = document.getElementById('calendar');
+
+      // 🔗 Replace with your published Google Sheet CSV link
+      const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS9tVTb3G8QAX3nCwB2uE7j8KHgUrBZxcS5vNXUqM7_zi7ouVaZTHct3trlk5SsdfR-oCYHo8LsoJsf/pub?output=csv";
+
+      // --- Find current rota (Friday) ---
+      function getCurrentRotaStart() {
+        let today = new Date();
+        let day = today.getDay(); // 0=Sun ... 5=Fri
+        let diffToFriday = (day >= 5) ? day - 5 : day + 2;
+        today.setDate(today.getDate() - diffToFriday);
+        today.setHours(0,0,0,0);
+        return today;
+      }
+
+      const rotaStart = getCurrentRotaStart();
+      const rotaEnd = new Date(rotaStart);
+      rotaEnd.setDate(rotaEnd.getDate() + 13);
+
+      // --- Fetch Google Sheets CSV ---
+      const response = await fetch(sheetUrl);
+      const text = await response.text();
+      const rows = text.trim().split("\n").map(r => r.split(","));
+
+      // Convert rows → events (skip header row)
+      const events = rows.slice(1).map(r => {
+        let title = r[1] || "Day Off";
+        return {
+          title: title,
+          start: r[0],
+          allDay: true,
+          className: title.replace(/\s+/g, "-") || "default"
+        };
+      });
+
+      // --- Init FullCalendar ---
+      var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGrid',
+        initialDate: rotaStart,
+        visibleRange: { start: rotaStart, end: rotaEnd },
+        headerToolbar: false,
+        events: events,
+        height: 'auto'
+      });
+
+      calendar.render();
+    });
+  </script>
+</body>
+</html>

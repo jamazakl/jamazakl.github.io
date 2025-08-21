@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>@james's availability</title>
+  <title>My Availability</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -16,7 +16,20 @@
     h1 {
       text-align: center;
       color: #2c3e50;
-      margin-bottom: 20px;
+      margin-bottom: 10px;
+    }
+    .legend {
+      max-width: 600px;
+      margin: 0 auto 20px;
+      padding: 10px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.9em;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    .legend div {
+      margin-bottom: 5px;
     }
     .day {
       background: #fff;
@@ -61,6 +74,14 @@
       border-radius: 6px;
       margin-bottom: 6px;
     }
+    .holiday-unconfirmed {
+      background: #f39c12;
+      color: #fff;
+      font-weight: bold;
+      padding: 6px 10px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+    }
     @media(max-width:600px){
       body { padding: 10px; }
       .day { padding: 10px; }
@@ -69,7 +90,16 @@
 </head>
 <body>
 
-<h1>@james's availability 🌸🌙</h1>
+<h1>My Availability 🌸🌙</h1>
+
+<div class="legend">
+  <div><span style="color:#27ae60;font-weight:bold;">🌴 Holiday</span> → Available all day</div>
+  <div><span style="color:#e74c3c;font-weight:bold;">🚫 Holiday P</span> → Planned holiday (no availability)</div>
+  <div><span style="color:#f39c12;font-weight:bold;">❓ Holiday U</span> → Unconfirmed holiday request</div>
+  <div><span style="color:#3498db;font-weight:bold;">🕒 Shifts</span> → Work hours</div>
+  <div><span style="color:#2ecc71;font-weight:bold;">🟢 Available</span> → Free time</div>
+</div>
+
 <div id="schedule"></div>
 
 <script>
@@ -124,6 +154,12 @@
           holidayPDiv.textContent = '🚫 Holiday (No availability)';
           shiftsContainer.appendChild(holidayPDiv);
 
+        } else if (shiftLower === 'holiday u') {
+          const holidayUDiv = document.createElement('div');
+          holidayUDiv.className = 'holiday-unconfirmed';
+          holidayUDiv.textContent = '❓ Holiday Request (Unconfirmed)';
+          shiftsContainer.appendChild(holidayUDiv);
+
         } else {
           const icon = getShiftIcon(d.Start);
           const shiftDiv = document.createElement('div');
@@ -131,14 +167,12 @@
           shiftDiv.textContent = `${icon} ${d.Shift} | ${d.Start} - ${d.End}`;
           shiftsContainer.appendChild(shiftDiv);
 
-          // Availability before shift (if after 08:00)
           if (d.Start && d.Start > '08:00') {
             const availBefore = document.createElement('div');
             availBefore.className = 'available';
             availBefore.textContent = `Available: 08:00 - ${d.Start}`;
             shiftsContainer.appendChild(availBefore);
           }
-          // Availability after shift (if before 23:59)
           if (d.End && d.End < '23:59') {
             const availAfter = document.createElement('div');
             availAfter.className = 'available';
@@ -148,7 +182,6 @@
         }
 
       } else {
-        // no shift at all → available all day
         const fullAvail = document.createElement('div');
         fullAvail.className = 'available';
         fullAvail.textContent = 'Available all day';

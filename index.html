@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Availability</title>
+<style>
+  body {
+    font-family: 'Courier New', monospace;
+    background: #0d0d0d;
+    color: #00ff99;
+    margin: 0;
+    padding: 10px;
+  }
+  h1 {
+    text-align: center;
+    color: #ff66ff;
+    text-shadow: 0 0 4px #ff00ff;
+  }
+  .day {
+    background: #111;
+    border: 2px solid #00ff99;
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px #00ffaa;
+  }
+  .shift {
+    background: #ff0066;
+    color: #fff;
+    padding: 5px;
+    border-radius: 4px;
+    margin-bottom: 5px;
+  }
+  .available {
+    background: #00ff99;
+    color: #000;
+    padding: 5px;
+    border-radius: 4px;
+    margin-bottom: 5px;
+  }
+  @media(max-width:600px){
+    body { padding:5px; }
+    .day { padding:5px; }
+  }
+</style>
+</head>
+<body>
+
+<h1>My Availability 🌸🌙</h1>
+<div id="schedule"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/tabletop@1.6.0/src/tabletop.min.js"></script>
+<script>
+  Tabletop.init({
+    key: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS9tVTb3G8QAX3nCwB2uE7j8KHgUrBZxcS5vNXUqM7_zi7ouVaZTHct3trlk5SsdfR-oCYHo8LsoJsf/pubhtml',
+    simpleSheet: true,
+    callback: function(data) {
+      // Sort chronologically
+      data.sort((a,b) => new Date(a.date) - new Date(b.date));
+      
+      const container = document.getElementById('schedule');
+      container.innerHTML = '';
+      
+      data.forEach(d => {
+        const dayDiv = document.createElement('div');
+        dayDiv.className = 'day';
+        
+        const dayHeader = document.createElement('h3');
+        dayHeader.textContent = d.date;
+        dayDiv.appendChild(dayHeader);
+        
+        if(d.shift) {
+          const shiftDiv = document.createElement('div');
+          shiftDiv.className = 'shift';
+          shiftDiv.textContent = `${d.shift} | ${d.start} - ${d.end}`;
+          dayDiv.appendChild(shiftDiv);
+          
+          // Available before shift
+          if(d.start && d.start !== '00:00'){
+            const availBefore = document.createElement('div');
+            availBefore.className = 'available';
+            availBefore.textContent = `Available: 00:00 - ${d.start}`;
+            dayDiv.appendChild(availBefore);
+          }
+          
+          // Available after shift
+          if(d.end && d.end !== '23:59'){
+            const availAfter = document.createElement('div');
+            availAfter.className = 'available';
+            availAfter.textContent = `Available: ${d.end} - 23:59`;
+            dayDiv.appendChild(availAfter);
+          }
+        } else {
+          const fullAvail = document.createElement('div');
+          fullAvail.className = 'available';
+          fullAvail.textContent = 'Available all day';
+          dayDiv.appendChild(fullAvail);
+        }
+        
+        container.appendChild(dayDiv);
+      });
+    }
+  });
+</script>
+
+</body>
+</html>

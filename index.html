@@ -1,105 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Availability</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f9f9f9;
-      color: #333;
-      margin: 0;
-      padding: 20px;
-      line-height: 1.6;
-    }
-    h1 {
-      text-align: center;
-      color: #2c3e50;
-      margin-bottom: 10px;
-    }
-    .legend {
-      max-width: 600px;
-      margin: 0 auto 20px;
-      padding: 10px;
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      font-size: 0.9em;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-    }
-    .legend div {
-      margin-bottom: 5px;
-    }
-    .day {
-      background: #fff;
-      border: 1px solid #ddd;
-      margin: 15px auto;
-      padding: 15px;
-      border-radius: 10px;
-      max-width: 600px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-    }
-    .day h3 {
-      margin-top: 0;
-      color: #34495e;
-    }
-    .shift {
-      background: #3498db;
-      color: #fff;
-      padding: 6px 10px;
-      border-radius: 6px;
-      margin-bottom: 6px;
-    }
-    .available {
-      background: #2ecc71;
-      color: #fff;
-      padding: 6px 10px;
-      border-radius: 6px;
-      margin-bottom: 6px;
-    }
-    .holiday {
-      background: #27ae60;
-      color: #fff;
-      font-weight: bold;
-      padding: 6px 10px;
-      border-radius: 6px;
-      margin-bottom: 6px;
-    }
-    .holiday-planned {
-      background: #e74c3c;
-      color: #fff;
-      font-weight: bold;
-      padding: 6px 10px;
-      border-radius: 6px;
-      margin-bottom: 6px;
-    }
-    .holiday-unconfirmed {
-      background: #f39c12;
-      color: #fff;
-      font-weight: bold;
-      padding: 6px 10px;
-      border-radius: 6px;
-      margin-bottom: 6px;
-    }
-    @media(max-width:600px){
-      body { padding: 10px; }
-      .day { padding: 10px; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Availability</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #fafafa;
+    color: #222;
+    margin: 0;
+    padding: 20px;
+  }
+  h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+  }
+  .day {
+    background: #fff;
+    border: 1px solid #ddd;
+    margin: 12px 0;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  }
+  .day.today {
+    background: #f0f0f0;
+    border-left: 5px solid #0077cc;
+  }
+  h3 {
+    margin: 0 0 10px;
+    font-size: 1.1em;
+    color: #444;
+  }
+  .shift {
+    background: #0077cc;
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+  }
+  .available {
+    background: #4caf50;
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+  }
+  .holiday {
+    background: #ffd54f;
+    color: #333;
+    padding: 6px 10px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    font-weight: bold;
+  }
+  .holiday-planned {
+    background: #e57373;
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    font-weight: bold;
+  }
+  .holiday-unconfirmed {
+    background: #64b5f6;
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    font-weight: bold;
+  }
+</style>
 </head>
 <body>
 
-<h1>My Availability 🌸🌙</h1>
-
-<div class="legend">
-  <div><span style="color:#27ae60;font-weight:bold;">🌴 Holiday</span> → Available all day</div>
-  <div><span style="color:#e74c3c;font-weight:bold;">🚫 Holiday P</span> → Planned holiday (no availability)</div>
-  <div><span style="color:#f39c12;font-weight:bold;">❓ Holiday U</span> → Unconfirmed holiday request</div>
-  <div><span style="color:#3498db;font-weight:bold;">🕒 Shifts</span> → Work hours</div>
-  <div><span style="color:#2ecc71;font-weight:bold;">🟢 Available</span> → Free time</div>
-</div>
-
+<h1>🌸 My Availability 🌙</h1>
 <div id="schedule"></div>
 
 <script>
@@ -117,6 +94,45 @@
     });
   }
 
+  // Add "st", "nd", "rd", "th"
+  function ordinalSuffix(n) {
+    const j = n % 10, k = n % 100;
+    if (j === 1 && k !== 11) return n + "st";
+    if (j === 2 && k !== 12) return n + "nd";
+    if (j === 3 && k !== 13) return n + "rd";
+    return n + "th";
+  }
+
+  function formatDate(dateStr) {
+    const d = new Date(dateStr);
+    if (isNaN(d)) return dateStr;
+
+    const weekday = new Intl.DateTimeFormat('en-GB', { weekday: 'long' }).format(d);
+    const month = new Intl.DateTimeFormat('en-GB', { month: 'long' }).format(d);
+    const day = ordinalSuffix(d.getDate());
+    const year = d.getFullYear();
+
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+
+    let relative = "";
+    if (d.getTime() === today.getTime()) {
+      relative = " (Today)";
+    } else if (d.getTime() === tomorrow.getTime()) {
+      relative = " (Tomorrow)";
+    } else {
+      const diffDays = Math.round((d - today) / (1000*60*60*24));
+      if (diffDays > 1 && diffDays <= 7) {
+        relative = ` (Next ${weekday})`;
+      }
+    }
+
+    return `${weekday}, ${day} ${month} ${year}${relative}`;
+  }
+
   function getShiftIcon(start) {
     if (!start) return "🕒";
     if (start < "12:00") return "🌞";
@@ -129,12 +145,27 @@
     const container = document.getElementById('schedule');
     container.innerHTML = '';
 
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
     data.forEach(d => {
+      const dateObj = new Date(d.Date);
+      if (isNaN(dateObj)) return;
+      dateObj.setHours(0,0,0,0);
+
+      if (dateObj < today) {
+        return; // skip past dates
+      }
+
       const dayDiv = document.createElement('div');
       dayDiv.className = 'day';
 
+      if (dateObj.getTime() === today.getTime()) {
+        dayDiv.classList.add('today');
+      }
+
       const dayHeader = document.createElement('h3');
-      dayHeader.textContent = d.Date;
+      dayHeader.textContent = formatDate(d.Date);
       dayDiv.appendChild(dayHeader);
 
       const shiftsContainer = document.createElement('div');

@@ -12,11 +12,7 @@
     margin: 0;
     padding: 20px;
   }
-  h1 {
-    text-align: center;
-    color: #333;
-    margin-bottom: 20px;
-  }
+  h1 { text-align: center; color: #333; margin-bottom: 20px; }
   .day {
     background: #fff;
     border: 1px solid #ddd;
@@ -25,53 +21,13 @@
     border-radius: 10px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.05);
   }
-  .day.today {
-    background: #f0f0f0;
-    border-left: 5px solid #0077cc;
-  }
-  h3 {
-    margin: 0 0 10px;
-    font-size: 1.1em;
-    color: #444;
-  }
-  .shift {
-    background: #0077cc;
-    color: #fff;
-    padding: 6px 10px;
-    border-radius: 6px;
-    margin-bottom: 6px;
-  }
-  .available {
-    background: #4caf50;
-    color: #fff;
-    padding: 6px 10px;
-    border-radius: 6px;
-    margin-bottom: 6px;
-  }
-  .holiday {
-    background: #ffd54f;
-    color: #333;
-    padding: 6px 10px;
-    border-radius: 6px;
-    margin-bottom: 6px;
-    font-weight: bold;
-  }
-  .holiday-planned {
-    background: #e57373;
-    color: #fff;
-    padding: 6px 10px;
-    border-radius: 6px;
-    margin-bottom: 6px;
-    font-weight: bold;
-  }
-  .holiday-unconfirmed {
-    background: #64b5f6;
-    color: #fff;
-    padding: 6px 10px;
-    border-radius: 6px;
-    margin-bottom: 6px;
-    font-weight: bold;
-  }
+  .day.today { background: #f0f0f0; border-left: 5px solid #0077cc; }
+  h3 { margin: 0 0 10px; font-size: 1.1em; color: #444; }
+  .shift { background: #0077cc; color: #fff; padding: 6px 10px; border-radius: 6px; margin-bottom: 6px; }
+  .available { background: #4caf50; color: #fff; padding: 6px 10px; border-radius: 6px; margin-bottom: 6px; }
+  .holiday { background: #ffd54f; color: #333; padding: 6px 10px; border-radius: 6px; margin-bottom: 6px; font-weight: bold; }
+  .holiday-planned { background: #e57373; color: #fff; padding: 6px 10px; border-radius: 6px; margin-bottom: 6px; font-weight: bold; }
+  .holiday-unconfirmed { background: #64b5f6; color: #fff; padding: 6px 10px; border-radius: 6px; margin-bottom: 6px; font-weight: bold; }
 </style>
 </head>
 <body>
@@ -80,155 +36,130 @@
 <div id="schedule"></div>
 
 <script>
-  async function fetchSheet() {
-    const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS9tVTb3G8QAX3nCwB2uE7j8KHgUrBZxcS5vNXUqM7_zi7ouVaZTHct3trlk5SsdfR-oCYHo8LsoJsf/pub?output=csv";
-    const res = await fetch(url);
-    const text = await res.text();
+async function fetchSheet() {
+  const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS9tVTb3G8QAX3nCwB2uE7j8KHgUrBZxcS5vNXUqM7_zi7ouVaZTHct3trlk5SsdfR-oCYHo8LsoJsf/pub?output=csv";
+  const res = await fetch(url);
+  const text = await res.text();
 
-    const rows = text.trim().split("\n").map(r => r.split(","));
-    const headers = rows[0];
-    return rows.slice(1).map(r => {
-      const obj = {};
-      headers.forEach((h,i) => obj[h.trim()] = (r[i] || "").trim());
-      return obj;
-    });
+  const rows = text.trim().split("\n").map(r => r.split(","));
+  const headers = rows[0];
+  return rows.slice(1).map(r => {
+    const obj = {};
+    headers.forEach((h,i) => obj[h.trim()] = (r[i] || "").trim());
+    return obj;
+  });
+}
+
+// Add ordinal suffix for day numbers
+function ordinalSuffix(n) {
+  const j = n % 10, k = n % 100;
+  if (j === 1 && k !== 11) return n + "st";
+  if (j === 2 && k !== 12) return n + "nd";
+  if (j === 3 && k !== 13) return n + "rd";
+  return n + "th";
+}
+
+// Robust date parser for DD/MM/YYYY, MM/DD/YYYY, or ISO
+function parseDate(dateStr) {
+  let d = new Date(dateStr);
+  if (!isNaN(d)) return d;
+
+  const parts = dateStr.split(/[\/\-]/);
+  if (parts.length === 3) {
+    let day = parseInt(parts[0], 10);
+    let month = parseInt(parts[1], 10);
+    let year = parseInt(parts[2], 10);
+
+    // Guess which is month/day based on value
+    if (month > 12) [day, month] = [month, day];
+
+    d = new Date(year, month-1, day);
+    if (!isNaN(d)) return d;
+  }
+  return null;
+}
+
+// Format date as "Friday, 22nd August 2025 (Today/Tomorrow/Next Monday)"
+function formatDate(dateStr) {
+  const d = parseDate(dateStr);
+  if (!d) return dateStr;
+
+  const weekday = new Intl.DateTimeFormat('en-GB', { weekday: 'long' }).format(d);
+  const month = new Intl.DateTimeFormat('en-GB', { month: 'long' }).format(d);
+  const day = ordinalSuffix(d.getDate());
+  const year = d.getFullYear();
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const tomorrow = new Date(today); tomorrow.setDate(today.getDate()+1);
+
+  let relative = "";
+  if (d.getTime() === today.getTime()) relative = " (Today)";
+  else if (d.getTime() === tomorrow.getTime()) relative = " (Tomorrow)";
+  else {
+    const diffDays = Math.round((d - today)/(1000*60*60*24));
+    if (diffDays > 1 && diffDays <= 7) relative = ` (Next ${weekday})`;
   }
 
-  // Add "st", "nd", "rd", "th"
-  function ordinalSuffix(n) {
-    const j = n % 10, k = n % 100;
-    if (j === 1 && k !== 11) return n + "st";
-    if (j === 2 && k !== 12) return n + "nd";
-    if (j === 3 && k !== 13) return n + "rd";
-    return n + "th";
-  }
+  return `${weekday}, ${day} ${month} ${year}${relative}`;
+}
 
-  function formatDate(dateStr) {
-    const d = new Date(dateStr);
-    if (isNaN(d)) return dateStr;
+function getShiftIcon(start) {
+  if (!start) return "🕒";
+  if (start < "12:00") return "🌞";
+  if (start < "18:00") return "🌤️";
+  return "🌙";
+}
 
-    const weekday = new Intl.DateTimeFormat('en-GB', { weekday: 'long' }).format(d);
-    const month = new Intl.DateTimeFormat('en-GB', { month: 'long' }).format(d);
-    const day = ordinalSuffix(d.getDate());
-    const year = d.getFullYear();
+function renderSchedule(data) {
+  data.sort((a,b)=> parseDate(a.Date) - parseDate(b.Date));
+  const container = document.getElementById('schedule');
+  container.innerHTML = '';
 
-    const today = new Date();
-    today.setHours(0,0,0,0);
+  const today = new Date(); today.setHours(0,0,0,0);
 
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
+  data.forEach(d => {
+    const dateObj = parseDate(d.Date);
+    if (!dateObj) return;
+    dateObj.setHours(0,0,0,0);
+    if (dateObj < today) return; // skip past
 
-    let relative = "";
-    if (d.getTime() === today.getTime()) {
-      relative = " (Today)";
-    } else if (d.getTime() === tomorrow.getTime()) {
-      relative = " (Tomorrow)";
-    } else {
-      const diffDays = Math.round((d - today) / (1000*60*60*24));
-      if (diffDays > 1 && diffDays <= 7) {
-        relative = ` (Next ${weekday})`;
+    const dayDiv = document.createElement('div');
+    dayDiv.className = 'day';
+    if (dateObj.getTime() === today.getTime()) dayDiv.classList.add('today');
+
+    const dayHeader = document.createElement('h3');
+    dayHeader.textContent = formatDate(d.Date);
+    dayDiv.appendChild(dayHeader);
+
+    const shiftsContainer = document.createElement('div');
+
+    if (d.Shift) {
+      const shiftLower = d.Shift.toLowerCase();
+      if (shiftLower === 'holiday') {
+        const div = document.createElement('div'); div.className='holiday'; div.textContent='🌴 Holiday (Available all day)'; shiftsContainer.appendChild(div);
+      } else if (shiftLower === 'holiday p') {
+        const div = document.createElement('div'); div.className='holiday-planned'; div.textContent='🚫 Holiday (No availability)'; shiftsContainer.appendChild(div);
+      } else if (shiftLower === 'holiday u') {
+        const div = document.createElement('div'); div.className='holiday-unconfirmed'; div.textContent='❓ Holiday Request (Unconfirmed)'; shiftsContainer.appendChild(div);
+      } else {
+        const icon = getShiftIcon(d.Start);
+        const div = document.createElement('div'); div.className='shift'; div.textContent=`${icon} ${d.Shift} | ${d.Start} - ${d.End}`; shiftsContainer.appendChild(div);
+        if (d.Start && d.Start > '08:00') { const b=document.createElement('div'); b.className='available'; b.textContent=`Available: 08:00 - ${d.Start}`; shiftsContainer.appendChild(b);}
+        if (d.End && d.End < '23:59') { const a=document.createElement('div'); a.className='available'; a.textContent=`Available: ${d.End} - 23:59`; shiftsContainer.appendChild(a);}
       }
+    } else {
+      const div = document.createElement('div'); div.className='available'; div.textContent='Available all day'; shiftsContainer.appendChild(div);
     }
 
-    return `${weekday}, ${day} ${month} ${year}${relative}`;
-  }
-
-  function getShiftIcon(start) {
-    if (!start) return "🕒";
-    if (start < "12:00") return "🌞";
-    if (start < "18:00") return "🌤️";
-    return "🌙";
-  }
-
-  function renderSchedule(data) {
-    data.sort((a,b) => new Date(a.Date) - new Date(b.Date));
-    const container = document.getElementById('schedule');
-    container.innerHTML = '';
-
-    const today = new Date();
-    today.setHours(0,0,0,0);
-
-    data.forEach(d => {
-      const dateObj = new Date(d.Date);
-      if (isNaN(dateObj)) return;
-      dateObj.setHours(0,0,0,0);
-
-      if (dateObj < today) {
-        return; // skip past dates
-      }
-
-      const dayDiv = document.createElement('div');
-      dayDiv.className = 'day';
-
-      if (dateObj.getTime() === today.getTime()) {
-        dayDiv.classList.add('today');
-      }
-
-      const dayHeader = document.createElement('h3');
-      dayHeader.textContent = formatDate(d.Date);
-      dayDiv.appendChild(dayHeader);
-
-      const shiftsContainer = document.createElement('div');
-
-      if (d.Shift) {
-        const shiftLower = d.Shift.toLowerCase();
-
-        if (shiftLower === 'holiday') {
-          const holidayDiv = document.createElement('div');
-          holidayDiv.className = 'holiday';
-          holidayDiv.textContent = '🌴 Holiday (Available all day)';
-          shiftsContainer.appendChild(holidayDiv);
-
-        } else if (shiftLower === 'holiday p') {
-          const holidayPDiv = document.createElement('div');
-          holidayPDiv.className = 'holiday-planned';
-          holidayPDiv.textContent = '🚫 Holiday (No availability)';
-          shiftsContainer.appendChild(holidayPDiv);
-
-        } else if (shiftLower === 'holiday u') {
-          const holidayUDiv = document.createElement('div');
-          holidayUDiv.className = 'holiday-unconfirmed';
-          holidayUDiv.textContent = '❓ Holiday Request (Unconfirmed)';
-          shiftsContainer.appendChild(holidayUDiv);
-
-        } else {
-          const icon = getShiftIcon(d.Start);
-          const shiftDiv = document.createElement('div');
-          shiftDiv.className = 'shift';
-          shiftDiv.textContent = `${icon} ${d.Shift} | ${d.Start} - ${d.End}`;
-          shiftsContainer.appendChild(shiftDiv);
-
-          if (d.Start && d.Start > '08:00') {
-            const availBefore = document.createElement('div');
-            availBefore.className = 'available';
-            availBefore.textContent = `Available: 08:00 - ${d.Start}`;
-            shiftsContainer.appendChild(availBefore);
-          }
-          if (d.End && d.End < '23:59') {
-            const availAfter = document.createElement('div');
-            availAfter.className = 'available';
-            availAfter.textContent = `Available: ${d.End} - 23:59`;
-            shiftsContainer.appendChild(availAfter);
-          }
-        }
-
-      } else {
-        const fullAvail = document.createElement('div');
-        fullAvail.className = 'available';
-        fullAvail.textContent = 'Available all day';
-        shiftsContainer.appendChild(fullAvail);
-      }
-
-      dayDiv.appendChild(shiftsContainer);
-      container.appendChild(dayDiv);
-    });
-  }
-
-  fetchSheet().then(renderSchedule).catch(err => {
-    console.error("Failed to load sheet:", err);
-    const container = document.getElementById('schedule');
-    container.innerHTML = "<p style='color:red'>Failed to load availability. Make sure the sheet is published as CSV.</p>";
+    dayDiv.appendChild(shiftsContainer);
+    container.appendChild(dayDiv);
   });
+}
+
+fetchSheet().then(renderSchedule).catch(err => {
+  console.error("Failed to load sheet:", err);
+  document.getElementById('schedule').innerHTML = "<p style='color:red'>Failed to load availability. Make sure the sheet is published as CSV.</p>";
+});
 </script>
 
 </body>

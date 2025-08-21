@@ -1,22 +1,106 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Availability Calendar</title>
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
+<style>
+  body {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    background: #fdf6f0;
+    display: flex;
+    justify-content: center;
+    padding: 10px;
+  }
+  #calendar {
+    max-width: 100%;
+    width: 100%;
+    background: #fff0f5;
+    border-radius: 15px;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+    padding: 10px;
+  }
+  .fc-event.shift {
+    background: #ffb3c6 !important;
+    color: #4a004f !important;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 0.9em;
+  }
+  .fc-event.available {
+    background: #a8e6cf !important;
+    color: #034d32 !important;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 0.9em;
+  }
+  @media (max-width: 600px) {
+    .fc-toolbar-title { font-size: 1.2em; }
+    .fc-event { font-size: 0.8em; padding: 2px 4px; }
+  }
+</style>
 </head>
 <body>
+
 <div id="calendar"></div>
+
+<!-- Load JS in correct order -->
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tabletop@1.6.0/src/tabletop.min.js"></script>
+
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  const calendarEl = document.getElementById('calendar');
-  const calendar = new FullCalendar.Calendar(calendarEl, {
-    initialView: 'timeGridWeek',
-    events: [
-      { title: 'Test Shift', start: '2025-08-22T06:30:00', end: '2025-08-22T14:30:00' }
-    ]
+  // Initialize after scripts have loaded
+  window.addEventListener('load', function() {
+    const calendarEl = document.getElementById('calendar');
+
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+      initialView: 'timeGridWeek',
+      slotMinTime: "06:00:00",
+      slotMaxTime: "24:00:00",
+      headerToolbar: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'timeGridWeek,timeGridDay'
+      },
+      nowIndicator: true,
+      allDaySlot: false,
+      eventOverlap: false,
+      height: 'auto'
+    });
+
+    Tabletop.init({
+      key: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS9tVTb3G8QAX3nCwB2uE7j8KHgUrBZxcS5vNXUqM7_zi7ouVaZTHct3trlk5SsdfR-oCYHo8LsoJsf/pubhtml',
+      simpleSheet: true,
+      callback: function(data) {
+        const events = [];
+
+        data.forEach(d => {
+          const day = d.date;
+          if(d.shift) {
+            const start = day + "T" + d.start;
+            const end = day + "T" + d.end;
+
+            // Shift event
+            events.push({ title: d.shift + " 🌙", start, end, className: "shift" });
+
+            // Before shift
+            events.push({ title: "Available 🌸", start: day + "T00:00", end: start, className: "available" });
+
+            // After shift
+            events.push({ title: "Available 🌸", start: end, end: day + "T23:59", className: "available" });
+          } else {
+            // Full day available
+            events.push({ title: "Available 🌸", start: day + "T00:00", end: day + "T23:59", className: "available" });
+          }
+        });
+
+        calendar.addEventSource(events);
+        calendar.render();
+      }
+    });
   });
-  calendar.render();
-});
 </script>
+
 </body>
 </html>

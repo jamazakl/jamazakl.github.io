@@ -51,35 +51,27 @@
 <div id="schedule">Loading...</div>
 
 <script>
-async function fetchSheet() {
-  const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS9tVTb3G8QAX3nCwB2uE7j8KHgUrBZxcS5vNXUqM7_zi7ouVaZTHct3trlk5SsdfR-oCYHo8LsoJsf/pubhtml';
+async function fetchSheetCSV() {
+  const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS9tVTb3G8QAX3nCwB2uE7j8KHgUrBZxcS5vNXUqM7_zi7ouVaZTHct3trlk5SsdfR-oCYHo8LsoJsf/pub?output=csv"; // Replace with your published CSV link
   const res = await fetch(url);
   const text = await res.text();
 
-  // Parse the HTML as a DOM
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(text, 'text/html');
-  const table = doc.querySelector('table');
-  if(!table) throw new Error("Table not found in published sheet");
+  // Split CSV into rows
+  const rows = text.trim().split('\n').map(r => r.split(','));
 
-  const rows = Array.from(table.querySelectorAll('tr')).slice(1); // skip header
-
-  const data = rows.map(row => {
-    const cells = row.querySelectorAll('td');
-    return {
-      date: cells[0]?.textContent.trim(),
-      shift: cells[1]?.textContent.trim(),
-      start: cells[2]?.textContent.trim(),
-      end: cells[3]?.textContent.trim()
-    };
-  });
+  // Map to objects (assumes first row is headers)
+  const data = rows.slice(1).map(r => ({
+    date: r[0],
+    shift: r[1] || '',
+    start: r[2] || '',
+    end: r[3] || ''
+  }));
 
   return data;
 }
 
 function renderSchedule(data) {
-  // Sort by date
-  data.sort((a,b) => new Date(a.date) - new Date(b.date));
+  data.sort((a, b) => new Date(a.date) - new Date(b.date));
 
   const container = document.getElementById('schedule');
   container.innerHTML = '';
@@ -111,6 +103,7 @@ function renderSchedule(data) {
         availAfter.textContent = `Available: ${d.end} - 23:59`;
         dayDiv.appendChild(availAfter);
       }
+
     } else {
       const fullAvail = document.createElement('div');
       fullAvail.className = 'available';
@@ -122,11 +115,10 @@ function renderSchedule(data) {
   });
 }
 
-// Run everything
-fetchSheet()
+fetchSheetCSV()
   .then(renderSchedule)
   .catch(err => {
-    console.error(err);
+    console.error("Failed to load sheet:", err);
     document.getElementById('schedule').innerHTML = "<p style='color:red'>Failed to load availability. Make sure the sheet is published publicly.</p>";
   });
 </script>

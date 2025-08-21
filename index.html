@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>My Availability Calendar</title>
+  <title>My Availability</title>
+  <!-- FullCalendar CSS -->
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js"></script>
   <style>
     body {
       font-family: 'Helvetica Neue', Arial, sans-serif;
@@ -43,81 +43,84 @@
 
 <div id="calendar"></div>
 
+<!-- FullCalendar JS -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js"></script>
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const calendarEl = document.getElementById('calendar');
+document.addEventListener('DOMContentLoaded', function() {
+  const calendarEl = document.getElementById('calendar');
 
-    const calendar = new FullCalendar.Calendar(calendarEl, {
-      initialView: 'timeGridWeek',
-      slotMinTime: "06:00:00",
-      slotMaxTime: "24:00:00",
-      headerToolbar: {
-        left: 'prev,next today',
-        center: 'title',
-        right: 'timeGridWeek,timeGridDay'
-      },
-      nowIndicator: true,
-      allDaySlot: false,
-      eventOverlap: false
-    });
+  const calendar = new FullCalendar.Calendar(calendarEl, {
+    initialView: 'timeGridWeek',
+    slotMinTime: "06:00:00",
+    slotMaxTime: "24:00:00",
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'timeGridWeek,timeGridDay'
+    },
+    nowIndicator: true,
+    allDaySlot: false,
+    eventOverlap: false
+  });
 
-    async function fetchSheetData() {
-      const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS9tVTb3G8QAX3nCwB2uE7j8KHgUrBZxcS5vNXUqM7_zi7ouVaZTHct3trlk5SsdfR-oCYHo8LsoJsf/pub?output=csv";
-      const response = await fetch(url);
-      const text = await response.text();
-      const rows = text.trim().split("\n").slice(1); // skip header
+  async function fetchSheetData() {
+    const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS9tVTb3G8QAX3nCwB2uE7j8KHgUrBZxcS5vNXUqM7_zi7ouVaZTHct3trlk5SsdfR-oCYHo8LsoJsf/pub?output=csv";
+    const response = await fetch(url);
+    const text = await response.text();
+    const rows = text.trim().split("\n").slice(1); // skip header
 
-      const events = [];
+    const events = [];
 
-      rows.forEach(row => {
-        const [date, shift, startTime, endTime] = row.split(",");
-        const day = date.trim();
-        const shiftName = shift.trim();
-        const start = day + "T" + startTime.trim();
-        const end = day + "T" + endTime.trim();
+    rows.forEach(row => {
+      const [date, shift, startTime, endTime] = row.split(",");
+      const day = date.trim();
+      const shiftName = shift.trim();
+      if (!startTime || !endTime) return; // skip off days
 
-        // Shift (busy) event
-        events.push({
-          title: shiftName + " 🌙",
-          start: start,
-          end: end,
-          className: "shift"
-        });
+      const start = day + "T" + startTime.trim();
+      const end = day + "T" + endTime.trim();
 
-        // Availability (before shift)
-        const startHour = parseInt(startTime.split(":")[0]);
-        const startMin = parseInt(startTime.split(":")[1]);
-        if (startHour > 0 || startMin > 0) {
-          const availStart = day + "T00:00";
-          events.push({
-            title: "Available 🌸",
-            start: availStart,
-            end: start,
-            className: "available"
-          });
-        }
-
-        // Availability (after shift)
-        const endHour = parseInt(endTime.split(":")[0]);
-        const endMin = parseInt(endTime.split(":")[1]);
-        if (!(endHour === 23 && endMin === 59)) {
-          const availEnd = day + "T23:59";
-          events.push({
-            title: "Available 🌸",
-            start: end,
-            end: availEnd,
-            className: "available"
-          });
-        }
+      // Shift (busy) event
+      events.push({
+        title: shiftName + " 🌙",
+        start: start,
+        end: end,
+        className: "shift"
       });
 
-      calendar.addEventSource(events);
-      calendar.render();
-    }
+      // Availability (before shift)
+      const startHour = parseInt(startTime.split(":")[0]);
+      const startMin = parseInt(startTime.split(":")[1]);
+      if (startHour > 0 || startMin > 0) {
+        events.push({
+          title: "Available 🌸",
+          start: day + "T00:00",
+          end: start,
+          className: "available"
+        });
+      }
 
-    fetchSheetData();
-  });
+      // Availability (after shift)
+      const endHour = parseInt(endTime.split(":")[0]);
+      const endMin = parseInt(endTime.split(":")[1]);
+      if (!(endHour === 23 && endMin === 59)) {
+        events.push({
+          title: "Available 🌸",
+          start: end,
+          end: day + "T23:59",
+          className: "available"
+        });
+      }
+    });
+
+    calendar.addEventSource(events);
+    calendar.render();
+  }
+
+  fetchSheetData();
+});
 </script>
 
 </body>
 </html>
+

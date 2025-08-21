@@ -48,74 +48,86 @@
 <body>
 
 <h1>My Availability 🌸🌙</h1>
-<div id="schedule"></div>
+<div id="schedule">Loading...</div>
 
 <script>
-  async function fetchSheet() {
-    const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS9tVTb3G8QAX3nCwB2uE7j8KHgUrBZxcS5vNXUqM7_zi7ouVaZTHct3trlk5SsdfR-oCYHo8LsoJsf/gviz/tq?tqx=out:json";
-    const res = await fetch(url);
-    const text = await res.text();
-    
-    // Tabletop/Google JSON returns a weird function wrapper — strip it
-    const json = JSON.parse(text.replace(/^.*?\(/, '').replace(/\);$/, ''));
-    return json.table.rows.map(row => ({
-      date: row.c[0]?.v,
-      shift: row.c[1]?.v || '',
-      start: row.c[2]?.v || '',
-      end: row.c[3]?.v || ''
-    }));
-  }
+async function fetchSheet() {
+  const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS9tVTb3G8QAX3nCwB2uE7j8KHgUrBZxcS5vNXUqM7_zi7ouVaZTHct3trlk5SsdfR-oCYHo8LsoJsf/pubhtml';
+  const res = await fetch(url);
+  const text = await res.text();
 
-  function renderSchedule(data) {
-    // Sort by date
-    data.sort((a,b) => new Date(a.date) - new Date(b.date));
+  // Parse the HTML as a DOM
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(text, 'text/html');
+  const table = doc.querySelector('table');
+  if(!table) throw new Error("Table not found in published sheet");
 
-    const container = document.getElementById('schedule');
-    container.innerHTML = '';
+  const rows = Array.from(table.querySelectorAll('tr')).slice(1); // skip header
 
-    data.forEach(d => {
-      const dayDiv = document.createElement('div');
-      dayDiv.className = 'day';
+  const data = rows.map(row => {
+    const cells = row.querySelectorAll('td');
+    return {
+      date: cells[0]?.textContent.trim(),
+      shift: cells[1]?.textContent.trim(),
+      start: cells[2]?.textContent.trim(),
+      end: cells[3]?.textContent.trim()
+    };
+  });
 
-      const dayHeader = document.createElement('h3');
-      dayHeader.textContent = d.date;
-      dayDiv.appendChild(dayHeader);
+  return data;
+}
 
-      if(d.shift){
-        const shiftDiv = document.createElement('div');
-        shiftDiv.className = 'shift';
-        shiftDiv.textContent = `${d.shift} | ${d.start} - ${d.end}`;
-        dayDiv.appendChild(shiftDiv);
+function renderSchedule(data) {
+  // Sort by date
+  data.sort((a,b) => new Date(a.date) - new Date(b.date));
 
-        if(d.start && d.start !== '00:00'){
-          const availBefore = document.createElement('div');
-          availBefore.className = 'available';
-          availBefore.textContent = `Available: 00:00 - ${d.start}`;
-          dayDiv.appendChild(availBefore);
-        }
+  const container = document.getElementById('schedule');
+  container.innerHTML = '';
 
-        if(d.end && d.end !== '23:59'){
-          const availAfter = document.createElement('div');
-          availAfter.className = 'available';
-          availAfter.textContent = `Available: ${d.end} - 23:59`;
-          dayDiv.appendChild(availAfter);
-        }
+  data.forEach(d => {
+    const dayDiv = document.createElement('div');
+    dayDiv.className = 'day';
 
-      } else {
-        const fullAvail = document.createElement('div');
-        fullAvail.className = 'available';
-        fullAvail.textContent = 'Available all day';
-        dayDiv.appendChild(fullAvail);
+    const dayHeader = document.createElement('h3');
+    dayHeader.textContent = d.date;
+    dayDiv.appendChild(dayHeader);
+
+    if(d.shift){
+      const shiftDiv = document.createElement('div');
+      shiftDiv.className = 'shift';
+      shiftDiv.textContent = `${d.shift} | ${d.start} - ${d.end}`;
+      dayDiv.appendChild(shiftDiv);
+
+      if(d.start && d.start !== '00:00'){
+        const availBefore = document.createElement('div');
+        availBefore.className = 'available';
+        availBefore.textContent = `Available: 00:00 - ${d.start}`;
+        dayDiv.appendChild(availBefore);
       }
 
-      container.appendChild(dayDiv);
-    });
-  }
+      if(d.end && d.end !== '23:59'){
+        const availAfter = document.createElement('div');
+        availAfter.className = 'available';
+        availAfter.textContent = `Available: ${d.end} - 23:59`;
+        dayDiv.appendChild(availAfter);
+      }
+    } else {
+      const fullAvail = document.createElement('div');
+      fullAvail.className = 'available';
+      fullAvail.textContent = 'Available all day';
+      dayDiv.appendChild(fullAvail);
+    }
 
-  fetchSheet().then(renderSchedule).catch(err => {
-    console.error("Failed to load sheet:", err);
-    const container = document.getElementById('schedule');
-    container.innerHTML = "<p style='color:red'>Failed to load availability. Make sure the sheet is published publicly.</p>";
+    container.appendChild(dayDiv);
+  });
+}
+
+// Run everything
+fetchSheet()
+  .then(renderSchedule)
+  .catch(err => {
+    console.error(err);
+    document.getElementById('schedule').innerHTML = "<p style='color:red'>Failed to load availability. Make sure the sheet is published publicly.</p>";
   });
 </script>
 

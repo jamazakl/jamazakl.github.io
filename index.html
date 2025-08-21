@@ -31,17 +31,11 @@
     color: #2980b9;
     margin-bottom: 10px;
   }
-  .shifts-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
   .shift, .available {
-    padding: 8px 12px;
+    padding: 10px 15px;
     border-radius: 6px;
-    font-size: 0.95em;
+    font-size: 1em;
     display: inline-block;
-    min-width: 150px;
   }
   .shift {
     background: #3498db;
@@ -51,10 +45,7 @@
   .available {
     background: #2ecc71;
     color: #fff;
-  }
-  @media(max-width:600px){
-    body { padding:10px; }
-    .shift, .available { font-size: 0.9em; min-width: 120px; }
+    font-weight: bold;
   }
 </style>
 </head>
@@ -64,6 +55,9 @@
 <div id="schedule">Loading...</div>
 
 <script>
+const SOCIAL_START = "09:00";
+const SOCIAL_END = "21:00";
+
 async function fetchSheetCSV() {
   const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS9tVTb3G8QAX3nCwB2uE7j8KHgUrBZxcS5vNXUqM7_zi7ouVaZTHct3trlk5SsdfR-oCYHo8LsoJsf/pub?output=csv"; // Replace with your published CSV link
   const res = await fetch(url);
@@ -95,39 +89,43 @@ function renderSchedule(data) {
     dayHeader.textContent = dateObj.toDateString(); // Friendly format
     dayDiv.appendChild(dayHeader);
 
-    const shiftsContainer = document.createElement('div');
-    shiftsContainer.className = 'shifts-container';
-
+    // Show shift if it exists
     if(d.shift){
       const shiftDiv = document.createElement('div');
       shiftDiv.className = 'shift';
       shiftDiv.textContent = `${d.shift} | ${d.start} - ${d.end}`;
-      shiftsContainer.appendChild(shiftDiv);
-
-      // Availability before the shift starts at 08:00
-      if(d.start && d.start !== '08:00'){
-        const availBefore = document.createElement('div');
-        availBefore.className = 'available';
-        availBefore.textContent = `Available between: 08:00 - ${d.start}`;
-        shiftsContainer.appendChild(availBefore);
-      }
-
-      // Availability after the shift
-      if(d.end && d.end !== '23:59'){
-        const availAfter = document.createElement('div');
-        availAfter.className = 'available';
-        availAfter.textContent = `Available between: ${d.end} - 23:59`;
-        shiftsContainer.appendChild(availAfter);
-      }
-    } else {
-      // Day off → available all day
-      const fullAvail = document.createElement('div');
-      fullAvail.className = 'available';
-      fullAvail.textContent = 'Available all day';
-      shiftsContainer.appendChild(fullAvail);
+      dayDiv.appendChild(shiftDiv);
     }
 
-    dayDiv.appendChild(shiftsContainer);
+    // Compute single availability block
+    let availStart = SOCIAL_START;
+    let availEnd = SOCIAL_END;
+
+    if(d.shift){
+      if(d.start > SOCIAL_START) availStart = SOCIAL_START;
+      if(d.start <= SOCIAL_START && d.end >= SOCIAL_END) {
+        // Shift covers all social hours → no availability
+        availStart = null;
+        availEnd = null;
+      } else if(d.start <= SOCIAL_START) availStart = d.end > SOCIAL_START ? d.end : SOCIAL_START;
+      if(d.end < SOCIAL_END) availEnd = SOCIAL_END;
+      if(d.start > SOCIAL_END) availStart = SOCIAL_START; // shift after social hours
+      if(d.end < SOCIAL_START) availEnd = SOCIAL_END; // shift before social hours
+    }
+
+    if(availStart && availEnd && availStart < availEnd){
+      const availDiv = document.createElement('div');
+      availDiv.className = 'available';
+      availDiv.textContent = `Available: ${availStart} - ${availEnd}`;
+      dayDiv.appendChild(availDiv);
+    } else if(!d.shift){
+      // No shift → full social hours
+      const availDiv = document.createElement('div');
+      availDiv.className = 'available';
+      availDiv.textContent = `Available: ${SOCIAL_START} - ${SOCIAL_END}`;
+      dayDiv.appendChild(availDiv);
+    }
+
     container.appendChild(dayDiv);
   });
 }

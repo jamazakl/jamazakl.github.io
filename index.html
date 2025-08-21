@@ -3,24 +3,32 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Availability Calendar</title>
+<title>My Availability</title>
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
 <style>
-  body { font-family:'Helvetica Neue', Arial,sans-serif; background:#fdf6f0; display:flex; justify-content:center; padding:10px; }
-  #calendar { max-width:100%; width:100%; background:#fff0f5; border-radius:15px; box-shadow:0 6px 15px rgba(0,0,0,0.1); padding:10px; }
-  .fc-event.shift { background:#ffb3c6 !important; color:#4a004f !important; border-radius:8px; font-weight:bold; font-size:0.9em; }
-  .fc-event.available { background:#a8e6cf !important; color:#034d32 !important; border-radius:8px; font-weight:bold; font-size:0.9em; }
-  @media(max-width:600px){ .fc-toolbar-title{font-size:1.2em;} .fc-event{font-size:0.8em;padding:2px 4px;} }
+body { font-family:'Helvetica Neue',Arial,sans-serif; background:#fdf6f0; display:flex; justify-content:center; padding:10px; }
+#calendar { max-width:100%; width:100%; background:#fff0f5; border-radius:15px; box-shadow:0 6px 15px rgba(0,0,0,0.1); padding:10px; }
+.fc-event.shift { background:#ffb3c6 !important; color:#4a004f !important; border-radius:8px; font-weight:bold; font-size:0.9em; }
+.fc-event.available { background:#a8e6cf !important; color:#034d32 !important; border-radius:8px; font-weight:bold; font-size:0.9em; }
+@media(max-width:600px){ .fc-toolbar-title{font-size:1.2em;} .fc-event{font-size:0.8em;padding:2px 4px;} }
 </style>
 </head>
 <body>
 
 <div id="calendar"></div>
 
-<!-- JS at the bottom -->
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tabletop@1.6.0/src/tabletop.min.js"></script>
+
 <script>
+// Predefined shift data (exported from your Google Sheet)
+const shiftData = [
+  { date: '2025-08-22', shift: 'Early Shift', start: '06:30', end: '14:30' },
+  { date: '2025-08-23', shift: 'Late Shift', start: '14:30', end: '22:30' },
+  { date: '2025-08-24', shift: 'Mid Shift', start: '10:00', end: '18:00' },
+  { date: '2025-08-25', shift: '', start: '', end: '' },
+  { date: '2025-08-26', shift: 'Early Shift', start: '07:30', end: '15:30' }
+];
+
 window.onload = function() {
   const calendarEl = document.getElementById('calendar');
   const calendar = new FullCalendar.Calendar(calendarEl, {
@@ -34,27 +42,23 @@ window.onload = function() {
     height: 'auto'
   });
 
-  Tabletop.init({
-    key: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS9tVTb3G8QAX3nCwB2uE7j8KHgUrBZxcS5vNXUqM7_zi7ouVaZTHct3trlk5SsdfR-oCYHo8LsoJsf/pubhtml',
-    simpleSheet: true,
-    callback: function(data) {
-      const events = [];
-      data.forEach(d => {
-        const day = d.date;
-        if(d.shift){
-          const start = day+"T"+d.start;
-          const end = day+"T"+d.end;
-          events.push({title:d.shift+" 🌙", start, end, className:"shift"});
-          events.push({title:"Available 🌸", start:day+"T00:00", end:start, className:"available"});
-          events.push({title:"Available 🌸", start:end, end:day+"T23:59", className:"available"});
-        } else {
-          events.push({title:"Available 🌸", start:day+"T00:00", end:day+"T23:59", className:"available"});
-        }
-      });
-      calendar.addEventSource(events);
-      calendar.render();
+  const events = [];
+
+  shiftData.forEach(d => {
+    const day = d.date;
+    if(d.shift){
+      const start = day+"T"+d.start;
+      const end = day+"T"+d.end;
+      events.push({title:d.shift+" 🌙", start, end, className:"shift"});
+      events.push({title:"Available 🌸", start:day+"T00:00", end:start, className:"available"});
+      events.push({title:"Available 🌸", start:end, end:day+"T23:59", className:"available"});
+    } else {
+      events.push({title:"Available 🌸", start:day+"T00:00", end:day+"T23:59", className:"available"});
     }
   });
+
+  calendar.addEventSource(events);
+  calendar.render();
 };
 </script>
 
